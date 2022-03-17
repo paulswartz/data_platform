@@ -1,5 +1,6 @@
 from datetime import date, datetime
-from io import BytesIO
+import gzip
+from urllib.parse import urlparse
 from attrs import frozen, field
 import cattrs
 import requests
@@ -37,9 +38,20 @@ class Dataset:
         """
         return CONVERTER.structure(raw, klass)
 
+    def filename(self) -> str:
+        """
+        Return the base filename from the URL.
+        """
+        return urlparse(self.url).path[1:]
+
     def fetch(self) -> pa.Table:
         """
         Return the contents of this dataset as a PyArrow Table.
         """
-        csv_file = BytesIO(requests.get(self.url).content)
+        r = requests.get(self.url)
+        csv_file = pa.BufferReader(r.content)
+
+        if self.filename().endswith(".gz"):
+            csv_file = pa.CompressedInputStream(csv_file, "gzip")
+
         return csv.read_csv(csv_file)
