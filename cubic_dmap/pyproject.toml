@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "cubic_dmap"
+version = "0.1.0"
+description = ""
+authors = ["Paul Swartz <pswartz@mbta.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+attrs = "^21.4.0"
+boto3 = "^1.17.0"
+requests = "^2.23.0"
+pyarrow = "^7.0.0"
+cattrs = "^1.10.0"
+
+[tool.poetry.dev-dependencies]
+black = "^22.1.0"
+pytest = "^7.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
