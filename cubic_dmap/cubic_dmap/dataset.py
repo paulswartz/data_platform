@@ -2,18 +2,14 @@ from datetime import date, datetime
 import gzip
 from urllib.parse import urlparse
 from attrs import frozen, field
-import cattrs
+from cattr.preconf import json
 import requests
 import pyarrow as pa
 from pyarrow import csv
 
 
-CONVERTER = cattrs.Converter()
-
+CONVERTER = json.make_converter()
 CONVERTER.register_structure_hook(date, lambda value, _type: date.fromisoformat(value))
-CONVERTER.register_structure_hook(
-    datetime, lambda value, _type: datetime.fromisoformat(value)
-)
 
 
 @frozen
