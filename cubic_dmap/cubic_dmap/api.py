@@ -15,6 +15,10 @@ ENDPOINTS = {
     "agg_average_boardings_by_day_type_month": "datasetpublicusersapi/aggregations/agg_average_boardings_by_day_type_month",
     "agg_boardings_fareprod_mode_month": "datasetpublicusersapi/aggregations/agg_boardings_fareprod_mode_month",
     "agg_total_boardings_month_mode": "datasetpublicusersapi/aggregations/agg_total_boardings_month_mode",
+    "agg_hourly_entry_exit_count": "datasetpublicusersapi/aggregations/agg_hourly_entry_exit_count",
+    "agg_daily_fareprod_station": "datasetpublicusersapi/aggregations/agg_daily_fareprod_station",
+    "agg_daily_transfers_station": "datasetpublicusersapi/aggregations/agg_daily_transfers_station",
+    "agg_daily_transfers_route": "datasetpublicusersapi/aggregations/agg_daily_transfers_route",
 }
 
 
