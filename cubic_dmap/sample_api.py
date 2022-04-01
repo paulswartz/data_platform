@@ -8,6 +8,30 @@ import pyarrow.csv as csv
 from cubic_dmap import api, simplify
 from cubic_dmap.state import State
 
+
+def write_csv(dataset, table):
+    last_updated_iso_basic = dataset.last_updated.strftime(
+        "%Y%m%dT%H%M%S.%f%z")
+    csv_path = tmp_path / "archive" / dataset.id / \
+        f"last_updated={last_updated_iso_basic}"
+    csv_path.mkdir(parents=True, exist_ok=True)
+    csv.write_csv(table, csv_path / f"{dataset.dataset_id}.csv")
+    return None
+
+
+def write_parquet(dataset, table):
+    partition_cols = []
+    for key in ["Year", "Month", "Day"]:
+        if key in table.schema.names:
+            partition_cols.append(key)
+    pq.write_to_dataset(table, tmp_path / dataset.id,
+                        partition_cols=partition_cols,
+                        partition_filename_cb=lambda _: f"{dataset.dataset_id}.parquet",
+                        version="2.4", flavor="spark", compression="GZIP")
+
+    return None
+
+
 apikey = os.environ['CUBIC_DMAP_API_KEY']
 tmp_path = Path("tmp")
 state_path = tmp_path / "state.json"
@@ -27,11 +51,10 @@ for endpoint in api.endpoints():
     for dataset in datasets:
         print(dataset)
         table = dataset.fetch()
-        csv.write_csv(table, tmp_path / f"{dataset.dataset_id}.csv")
+        write_csv(dataset, table)
         table = simplify.simplify_table(table)
         print(table)
-        pq.write_table(table, tmp_path / f"{dataset.dataset_id}.parquet",
-                       version="2.4", flavor="spark", compression="GZIP")
+        write_parquet(dataset, table)
         state.update(dataset)
         print("")
     print("")
