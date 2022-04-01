@@ -17,6 +17,9 @@ class TestSimplifyTable:
                     [epoch_date, epoch_date, epoch_date], type=pa.date32()
                 ),
                 "Value": pa.array([1, 2, 3], type=pa.int64()),
+                "Year": pa.array([2022, 2022, 2022], pa.uint16()),
+                "Month": pa.array([3, 3, 3], pa.uint8()),
+                "Day": pa.array([22, 22, 22], pa.uint8()),
             }
         )
 

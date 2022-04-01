@@ -13,20 +13,24 @@ def simplify_table(table: pa.Table) -> pa.Table:
       - Time Period
       - Service
       - Fare Product Type
+      - Route
       - Station
     """
-    table = replace_column(table, "Date", simplify_date_column)
     table = replace_column(table, "Year", simplify_year_column)
     table = replace_column(table, "Month", simplify_month_column)
+    if "Date" in table.schema.names:
+        table = update_date_columns(table)
     for column in {
         "Day Type",
         "Time Period",
         "Service",
         "Fare Product Type",
+        "Route",
         "Station",
     }:
         table = replace_column(table, column, dictionarize_column)
-    return table
+
+    return table.unify_dictionaries()
 
 
 def replace_column(
@@ -45,9 +49,17 @@ def replace_column(
 DATE_EPOCH = date(1970, 1, 1)
 
 
-def simplify_date_column(array: pa.Array) -> pa.Array:
-    return pa.array(
-        [(parse_date(d) - DATE_EPOCH).days for d in array.to_pylist()], pa.date32()
+def update_date_columns(table: pa.Table) -> pa.Table:
+    dates = [parse_date(d) for d in table.column("Date").to_pylist()]
+    date_column = pa.array([(d - DATE_EPOCH).days for d in dates], pa.date32())
+    year_column = pa.array([d.year for d in dates], pa.uint16())
+    month_column = pa.array([d.month for d in dates], pa.uint8())
+    day_column = pa.array([d.day for d in dates], pa.uint8())
+    table = replace_column(table, "Date", lambda _: date_column)
+    return (
+        table.append_column("Year", year_column)
+        .append_column("Month", month_column)
+        .append_column("Day", day_column)
     )
 
 
