@@ -16,10 +16,10 @@ class TestSimplifyTable:
                 "Date": pa.array(
                     [epoch_date, epoch_date, epoch_date], type=pa.date32()
                 ),
-                "Value": pa.array([1, 2, 3], type=pa.int64()),
-                "Year": pa.array([2022, 2022, 2022], pa.uint16()),
-                "Month": pa.array([3, 3, 3], pa.uint8()),
-                "Day": pa.array([22, 22, 22], pa.uint8()),
+                "Value": pa.array([1, 2, 3]),
+                "Year": pa.array(["2022", "2022", "2022"]),
+                "Month": pa.array(["03", "03", "03"]),
+                "Day": pa.array(["22", "22", "22"]),
             }
         )
 
@@ -36,8 +36,8 @@ class TestSimplifyTable:
         )
         expected = pa.table(
             {
-                "Year": pa.array([2022, 65535], type=pa.uint16()),
-                "Month": pa.array([1, 12], type=pa.uint8()),
+                "Year": pa.array(["2022", "65535"]),
+                "Month": pa.array(["01", "12"]),
             }
         )
 
