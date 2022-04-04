@@ -51,12 +51,16 @@ DATE_EPOCH = date(1970, 1, 1)
 
 
 def update_date_columns(table: pa.Table) -> pa.Table:
-    dates = [parse_date(d) for d in table.column("Date").to_pylist()]
-    date_column = pa.array([(d - DATE_EPOCH).days for d in dates], pa.date32())
+    if table.schema.field("Date").type == pa.date32():
+        dates = table.column("Date").to_pylist()
+    else:
+        dates = [parse_date(d) for d in table.column("Date").to_pylist()]
+        date_column = pa.array([(d - DATE_EPOCH).days for d in dates], pa.date32())
+        table = replace_column(table, "Date", lambda _: date_column)
+
     year_column = pa.array([d.strftime("%Y") for d in dates])
     month_column = pa.array([d.strftime("%m") for d in dates])
     day_column = pa.array([d.strftime("%d") for d in dates])
-    table = replace_column(table, "Date", lambda _: date_column)
     return (
         table.append_column("Year", year_column)
         .append_column("Month", month_column)

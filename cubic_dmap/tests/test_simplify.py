@@ -27,6 +27,22 @@ class TestSimplifyTable:
 
         assert expected == actual
 
+    def test_date_column_already_date(self):
+        table = pa.table({"Date": pa.array([0], pa.date32())})
+
+        expected = pa.table(
+            {
+                "Date": pa.array([date(1970, 1, 1)], pa.date32()),
+                "Year": pa.array(["1970"]),
+                "Month": pa.array(["01"]),
+                "Day": pa.array(["01"]),
+            }
+        )
+
+        actual = simplify_table(table)
+
+        assert expected == actual
+
     def test_year_month_columns(self):
         table = pa.table(
             {
