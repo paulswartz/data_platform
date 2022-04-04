@@ -19,6 +19,7 @@ def simplify_table(table: pa.Table) -> pa.Table:
     """
     table = replace_column(table, "Year", simplify_year_column)
     table = replace_column(table, "Month", simplify_month_column)
+    table = replace_column(table, "Hour", simplify_uint8_column)
     if "Date" in table.schema.names:
         table = update_date_columns(table)
     for column in {
@@ -88,6 +89,10 @@ def simplify_month_column(array: pa.Array) -> pa.Array:
         [datetime.strptime(d, "%B").strftime("%m") for d in array.to_pylist()],
         pa.string(),
     )
+
+
+def simplify_uint8_column(array: pa.Array) -> pa.Array:
+    return array.cast(pa.uint8())
 
 
 def dictionarize_column(array: pa.Array) -> pa.Array:

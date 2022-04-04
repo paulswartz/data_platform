@@ -43,17 +43,19 @@ class TestSimplifyTable:
 
         assert expected == actual
 
-    def test_year_month_columns(self):
+    def test_year_month_hour_columns(self):
         table = pa.table(
             {
                 "Year": pa.array([2022, 65535], type=pa.int64()),
                 "Month": ["January", "December"],
+                "Hour": pa.array([0, 23], type=pa.int64()),
             }
         )
         expected = pa.table(
             {
                 "Year": pa.array(["2022", "65535"]),
                 "Month": pa.array(["01", "12"]),
+                "Hour": pa.array([0, 23], type=pa.uint8()),
             }
         )
 
