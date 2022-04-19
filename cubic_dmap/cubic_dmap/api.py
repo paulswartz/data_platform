@@ -11,7 +11,7 @@ BASE_URLS = {
     "qa": "https://mbta-qa.api.cubicnextcloud.com/",
 }
 
-ENDPOINTS = {
+PUBLIC_ENDPOINTS = {
     "agg_average_boardings_by_day_type_month": "datasetpublicusersapi/aggregations/agg_average_boardings_by_day_type_month",
     "agg_boardings_fareprod_mode_month": "datasetpublicusersapi/aggregations/agg_boardings_fareprod_mode_month",
     "agg_total_boardings_month_mode": "datasetpublicusersapi/aggregations/agg_total_boardings_month_mode",
@@ -21,12 +21,27 @@ ENDPOINTS = {
     "agg_daily_transfers_route": "datasetpublicusersapi/aggregations/agg_daily_transfers_route",
 }
 
+CONTROLLED_ENDPOINTS = {
+    "use_transaction_longitudinal": "controlledresearchusersapi/transactional/use_transaction_longitudinal",
+    "use_transaction_location": "controlledresearchusersapi/transactional/use_transaction_location",
+    "device_event": "controlledresearchusersapi/transactional/device_event",
+}
 
-def endpoints() -> List[str]:
+ENDPOINTS = {**PUBLIC_ENDPOINTS, **CONTROLLED_ENDPOINTS}
+
+
+def public_user_endpoints() -> List[str]:
     """
-    Return the valid endpoints for DMAP APIs.
+    Return the valid endpoints for DMAP Public User APIs.
     """
-    return list(ENDPOINTS.keys())
+    return list(PUBLIC_ENDPOINTS.keys())
+
+
+def controlled_user_endpoints() -> List[str]:
+    """
+    Return the valid endpoints for DMAP Controlled User APIs.
+    """
+    return list(CONTROLLED_ENDPOINTS.keys())
 
 
 def process_get_params(params: Mapping[str, Any]) -> Mapping[str, str]:

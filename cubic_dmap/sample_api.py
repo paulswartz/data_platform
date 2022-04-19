@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
 import json
+import traceback
+from typing import Any
 import pyarrow as pa
 from pyarrow import csv, fs
 import pyarrow.dataset as ds
@@ -8,22 +10,38 @@ from cubic_dmap import api, simplify
 from cubic_dmap.dataset import Dataset
 from cubic_dmap.state import State
 
-apikey = os.environ['CUBIC_DMAP_API_KEY']
+public_apikey = os.environ['CUBIC_DMAP_PUBLIC_API_KEY']
+controlled_apikey = os.environ['CUBIC_DMAP_CONTROLLED_API_KEY']
+
 (state_fs, state_path) = fs.FileSystem.from_uri(
     os.environ["STATE_FS"])
+(error_fs, error_path) = fs.FileSystem.from_uri(
+    os.environ["DMAP_ERROR_FS"])
 (archive_fs, archive_path) = fs.FileSystem.from_uri(
     os.environ["DMAP_ARCHIVE_FS"])
 (springboard_fs, springboard_path) = fs.FileSystem.from_uri(
     os.environ["DMAP_SPRINGBOARD_FS"])
 
 
-def write_csv(dataset: Dataset, table: pa.Table) -> None:
+def archive_csv(dataset: Dataset, table: pa.Table) -> None:
     last_updated_iso_basic = dataset.last_updated.strftime(
         "%Y%m%dT%H%M%S.%f%z")
     csv_path = f"{archive_path}/{dataset.id}/last_updated={last_updated_iso_basic}"
     archive_fs.create_dir(csv_path, recursive=True)
     with archive_fs.open_output_stream(f"{csv_path}/{dataset.dataset_id}.csv") as f:
         csv.write_csv(table, f)
+
+
+def error_csv(dataset: Dataset, error: Any, table: pa.Table) -> None:
+    last_updated_iso_basic = dataset.last_updated.strftime(
+        "%Y%m%dT%H%M%S.%f%z")
+    csv_path = f"{error_path}/{dataset.id}/last_updated={last_updated_iso_basic}"
+    error_fs.create_dir(csv_path, recursive=True)
+    with error_fs.open_output_stream(f"{csv_path}/{dataset.dataset_id}.csv") as f:
+        csv.write_csv(table, f)
+
+    with error_fs.open_output_stream(f"{csv_path}/error.txt") as f:
+        f.write(str(error).encode('utf8'))
 
 
 def write_parquet(dataset: Dataset, table: pa.Table) -> None:
@@ -60,24 +78,41 @@ def load_state() -> State:
 
 
 def fetch_endpoints(state: State, output=print) -> State:
-    for endpoint in api.endpoints():
-        output(endpoint)
-        datasets = api.get(
-            endpoint, apikey, last_updated=state.get_next_updated_time(endpoint))
-        for dataset in datasets:
-            output(dataset)
-            table = dataset.fetch()
-            write_csv(dataset, table)
-            table = simplify.simplify_table(table)
-            output(table)
-            write_parquet(dataset, table)
-            state.update(dataset)
+    for (endpoint_fn, apikey) in (
+            (api.public_user_endpoints, public_apikey),
+            (api.controlled_user_endpoints, controlled_apikey)
+    ):
+        for endpoint in endpoint_fn():
+            output(endpoint)
+            datasets = api.get(
+                endpoint, apikey, last_updated=state.get_next_updated_time(endpoint))
+            for dataset in datasets:
+                fetch_and_update_dataset(dataset, state, output=output)
+                output("")
             output("")
-        output("")
-        assert [] == api.get(
-            endpoint, apikey, last_updated=state.get_next_updated_time(endpoint))
+            assert [] == api.get(
+                endpoint, apikey, last_updated=state.get_next_updated_time(endpoint))
 
     return state
+
+
+def fetch_and_update_dataset(dataset: Dataset, state: State, output) -> None:
+    output(dataset)
+    state.update(dataset)
+    try:
+        table = dataset.fetch()
+        try:
+            simple_table = simplify.simplify_table(table)
+        except Exception:
+            # don't fail when simplifying the table
+            simple_table = table
+        output(simple_table)
+        write_parquet(dataset, simple_table)
+        archive_csv(dataset, table)
+    except Exception:
+        formatted_error = traceback.format_exc()
+        output(formatted_error)
+        error_csv(dataset, formatted_error, table)
 
 
 def write_state(state: State) -> None:
