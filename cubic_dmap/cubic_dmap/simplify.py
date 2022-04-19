@@ -1,5 +1,6 @@
 from typing import Callable
 from datetime import date, datetime
+from uuid import UUID
 import pyarrow as pa
 
 
@@ -20,6 +21,7 @@ def simplify_table(table: pa.Table) -> pa.Table:
     table = replace_column(table, "Year", simplify_year_column)
     table = replace_column(table, "Month", simplify_month_column)
     table = replace_column(table, "Hour", simplify_uint8_column)
+    table = replace_column(table, "id", simplify_uuid_column)
     if "Date" in table.schema.names:
         table = update_date_columns(table)
     for column in {
@@ -93,6 +95,17 @@ def simplify_month_column(array: pa.Array) -> pa.Array:
 
 def simplify_uint8_column(array: pa.Array) -> pa.Array:
     return array.cast(pa.uint8())
+
+
+def simplify_uuid_column(array: pa.Array) -> pa.Array:
+    try:
+        uuids = [UUID(hex=h) for h in array.to_pylist()]
+    except ValueError:
+        # not UUIDs
+        return array
+
+    binary_uuids = [u.bytes for u in uuids]
+    return pa.array(binary_uuids, pa.binary(16))
 
 
 def dictionarize_column(array: pa.Array) -> pa.Array:

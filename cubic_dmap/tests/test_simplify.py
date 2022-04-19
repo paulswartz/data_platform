@@ -63,6 +63,31 @@ class TestSimplifyTable:
 
         assert expected == actual
 
+    def test_simplify_id_column(self):
+        table = pa.table({"id": ["25146b13-25e2-4e84-bc33-63920cef4b5a"]})
+
+        expected = pa.table(
+            {
+                "id": pa.array(
+                    [
+                        b"\x25\x14\x6b\x13\x25\xe2\x4e\x84\xbc\x33\x63\x92\x0c\xef\x4b\x5a"
+                    ],
+                    pa.binary(16),
+                )
+            }
+        )
+
+        actual = simplify_table(table)
+
+        assert expected == actual
+
+    def test_simplify_id_column_not_uuid(self):
+        table = pa.table({"id": ["id"]})
+
+        actual = simplify_table(table)
+
+        assert table == actual
+
     def test_dictionarize_columns(self):
         table = pa.table(
             {
