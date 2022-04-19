@@ -50,4 +50,5 @@ class Dataset:
         if self.filename().endswith(".gz"):
             csv_file = pa.CompressedInputStream(csv_file, "gzip")
 
-        return csv.read_csv(csv_file)
+        parse_options = csv.ParseOptions(newlines_in_values=True)
+        return csv.read_csv(csv_file, parse_options=parse_options)
