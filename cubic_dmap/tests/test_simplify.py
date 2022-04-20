@@ -6,7 +6,10 @@ from cubic_dmap.simplify import simplify_table
 class TestSimplifyTable:
     def test_date_column(self):
         table = pa.table(
-            {"Date": ["03-22-2022", "03-22-22", "March 22, 2022"], "Value": [1, 2, 3]}
+            {
+                "Date": ["03-22-2022", "03-22-22", "March 22, 2022"],
+                "event_mm_dd_yy": ["03-22-22", "03-22-22", ""],
+            }
         )
 
         epoch_date = (date(2022, 3, 22) - date(1970, 1, 1)).days
@@ -16,7 +19,7 @@ class TestSimplifyTable:
                 "Date": pa.array(
                     [epoch_date, epoch_date, epoch_date], type=pa.date32()
                 ),
-                "Value": pa.array([1, 2, 3]),
+                "event_mm_dd_yy": pa.array([epoch_date, epoch_date, None], pa.date32()),
                 "Year": pa.array(["2022", "2022", "2022"]),
                 "Month": pa.array(["03", "03", "03"]),
                 "Day": pa.array(["22", "22", "22"]),
@@ -58,6 +61,15 @@ class TestSimplifyTable:
                 "Hour": pa.array([0, 23], type=pa.uint8()),
             }
         )
+
+        actual = simplify_table(table)
+
+        assert expected == actual
+
+    def test_simplify_flag_column(self):
+        table = pa.table({"optional_flag": pa.array([0, 1, None], pa.int64())})
+
+        expected = pa.table({"optional_flag": [False, True, None]})
 
         actual = simplify_table(table)
 

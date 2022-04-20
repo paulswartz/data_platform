@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Iterable, Callable, Optional, Union
 from datetime import date, datetime
 from uuid import UUID
 import pyarrow as pa
@@ -19,11 +19,20 @@ def simplify_table(table: pa.Table) -> pa.Table:
       - Station
     """
     table = replace_column(table, "Year", simplify_year_column)
+    table = replace_column_suffix(table, "_year", simplify_year_column)
     table = replace_column(table, "Month", simplify_month_column)
+    table = replace_column_suffix(table, "_month_nbr", simplify_uint8_column)
+    table = replace_column(table, "Date", simplify_date_column)
+    table = replace_column_suffix(table, "_mm_dd_yy", simplify_date_column)
     table = replace_column(table, "Hour", simplify_uint8_column)
     table = replace_column(table, "id", simplify_uuid_column)
+    table = replace_column_suffix(table, "_flag", simplify_boolean_column)
+    table = replace_column_suffix(table, "_name", dictionarize_column)
+    table = replace_column_suffix(table, "_desc", dictionarize_column)
     if "Date" in table.schema.names:
-        table = update_date_columns(table)
+        table = set_date_partition_columns(table, "Date")
+    elif "transit_day_mm_dd_yy" in table.schema.names:
+        table = set_date_partition_columns(table, "transit_day_mm_dd_yy")
     for column in {
         "Day Type",
         "Time Period",
@@ -31,6 +40,7 @@ def simplify_table(table: pa.Table) -> pa.Table:
         "Fare Product Type",
         "Route",
         "Station",
+        "device_id",
     }:
         table = replace_column(table, column, dictionarize_column)
 
@@ -50,17 +60,25 @@ def replace_column(
     return table.set_column(index, field, new_column)
 
 
+def replace_column_suffix(
+    table: pa.Table, suffix: str, replace_fun: Callable[[pa.Array], pa.Array]
+) -> pa.Table:
+    for (index, field) in enumerate(table.schema.names):
+        if not field.endswith(suffix):
+            continue
+
+        column = table.column(index)
+        new_column = replace_fun(column)
+        table = table.set_column(index, field, new_column)
+
+    return table
+
+
 DATE_EPOCH = date(1970, 1, 1)
 
 
-def update_date_columns(table: pa.Table) -> pa.Table:
-    if table.schema.field("Date").type == pa.date32():
-        dates = table.column("Date").to_pylist()
-    else:
-        dates = [parse_date(d) for d in table.column("Date").to_pylist()]
-        date_column = pa.array([(d - DATE_EPOCH).days for d in dates], pa.date32())
-        table = replace_column(table, "Date", lambda _: date_column)
-
+def set_date_partition_columns(table: pa.Table, column_name: str) -> pa.Table:
+    dates = table.column(column_name).to_pylist()
     year_column = pa.array([d.strftime("%Y") for d in dates])
     month_column = pa.array([d.strftime("%m") for d in dates])
     day_column = pa.array([d.strftime("%d") for d in dates])
@@ -71,9 +89,24 @@ def update_date_columns(table: pa.Table) -> pa.Table:
     )
 
 
-def parse_date(d: str) -> date:
+def simplify_date_column(array: pa.Array) -> pa.Array:
+    dates = (parse_date(d) for d in array.to_pylist())
+    return date_array_from_dates(dates)
+
+
+def date_array_from_dates(dates: Iterable[Optional[date]]) -> pa.Array:
+    return pa.array(
+        [None if d is None else (d - DATE_EPOCH).days for d in dates], pa.date32()
+    )
+
+
+def parse_date(d: Union[str, date]) -> Optional[date]:
+    if d == "":
+        return None
+    if isinstance(d, date):
+        return d
     if len(d) == 8:
-        # agg_hourly_entry_exit_count
+        # agg_hourly_entry_exit_count or *_mm_dd_yy
         return datetime.strptime(d, "%m-%d-%y").date()
     try:
         return datetime.strptime(d, "%m-%d-%Y").date()
@@ -95,6 +128,10 @@ def simplify_month_column(array: pa.Array) -> pa.Array:
 
 def simplify_uint8_column(array: pa.Array) -> pa.Array:
     return array.cast(pa.uint8())
+
+
+def simplify_boolean_column(array: pa.Array) -> pa.Array:
+    return array.cast(pa.bool_())
 
 
 def simplify_uuid_column(array: pa.Array) -> pa.Array:
