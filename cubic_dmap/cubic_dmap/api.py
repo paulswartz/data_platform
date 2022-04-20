@@ -19,6 +19,7 @@ PUBLIC_ENDPOINTS = {
     "agg_daily_fareprod_station": "datasetpublicusersapi/aggregations/agg_daily_fareprod_station",
     "agg_daily_transfers_station": "datasetpublicusersapi/aggregations/agg_daily_transfers_station",
     "agg_daily_transfers_route": "datasetpublicusersapi/aggregations/agg_daily_transfers_route",
+    "agg_daily_fareprod_route": "datasetpublicusersapi/aggregations/agg_daily_fareprod_route",
 }
 
 CONTROLLED_ENDPOINTS = {
