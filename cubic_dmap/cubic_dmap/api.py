@@ -25,6 +25,7 @@ PUBLIC_ENDPOINTS = {
 CONTROLLED_ENDPOINTS = {
     "use_transaction_longitudinal": "controlledresearchusersapi/transactional/use_transaction_longitudinal",
     "use_transaction_location": "controlledresearchusersapi/transactional/use_transaction_location",
+    "sale_transaction": "controlledresearchusersapi/transactional/sale_transaction",
     "device_event": "controlledresearchusersapi/transactional/device_event",
 }
 
