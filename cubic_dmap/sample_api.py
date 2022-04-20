@@ -90,8 +90,7 @@ def fetch_endpoints(state: State, output=print) -> State:
                 fetch_and_update_dataset(dataset, state, output=output)
                 output("")
             output("")
-            assert [] == api.get(
-                endpoint, apikey, last_updated=state.get_next_updated_time(endpoint))
+        output("")
 
     return state
 
@@ -99,20 +98,20 @@ def fetch_endpoints(state: State, output=print) -> State:
 def fetch_and_update_dataset(dataset: Dataset, state: State, output) -> None:
     output(dataset)
     state.update(dataset)
-    try:
-        table = dataset.fetch()
+    with dataset.table() as table:
         try:
-            simple_table = simplify.simplify_table(table)
-        except Exception:
-            # don't fail when simplifying the table
-            simple_table = table
-        output(simple_table)
-        write_parquet(dataset, simple_table)
-        archive_csv(dataset, table)
-    except Exception:
-        formatted_error = traceback.format_exc()
-        output(formatted_error)
-        error_csv(dataset, formatted_error, table)
+            try:
+                simple_table = simplify.simplify_table(table)
+            except Exception:   # pylint: disable=broad-except
+                # don't fail when simplifying the table
+                simple_table = table
+            output(simple_table)
+            write_parquet(dataset, simple_table)
+            archive_csv(dataset, table)
+        except Exception:  # pylint: disable=broad-except
+            formatted_error = traceback.format_exc()
+            output(formatted_error)
+            error_csv(dataset, formatted_error, table)
 
 
 def write_state(state: State) -> None:

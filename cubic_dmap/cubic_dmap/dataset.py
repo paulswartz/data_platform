@@ -1,6 +1,9 @@
 from datetime import date, datetime
 import gzip
 from urllib.parse import urlparse
+from tempfile import NamedTemporaryFile
+from contextlib import contextmanager
+from typing import Callable, Optional
 from attrs import frozen, field
 from cattr.preconf import json
 import requests
@@ -10,6 +13,8 @@ from pyarrow import csv
 
 CONVERTER = json.make_converter()
 CONVERTER.register_structure_hook(date, lambda value, _type: date.fromisoformat(value))
+
+BLOCK_SIZE = 1024 * 1024
 
 
 @frozen
@@ -38,7 +43,40 @@ class Dataset:
         """
         Return the base filename from the URL.
         """
-        return urlparse(self.url).path[1:]
+        return urlparse(self.url).path.rsplit("/", maxsplit=1)[1]
+
+    def parse_options(self) -> csv.ParseOptions:
+        """
+        ParseOptions for reading CSV files with PyArrow.
+        """
+        return csv.ParseOptions(newlines_in_values=True)
+
+    @contextmanager
+    def table(self, block_callback: Optional[Callable[[int], None]] = None, **kwargs):
+        suffix = self.filename()
+
+        r = requests.get(self.url, stream=True)
+
+        if r.headers.get("content-encoding") == "gzip":
+            suffix += ".gz"
+
+        with NamedTemporaryFile(suffix=suffix) as f:
+            block_count = 0
+            while True:
+                data = r.raw.read(BLOCK_SIZE)
+                if data == b"":
+                    break
+                f.write(data)
+                f.flush()
+                if block_callback:
+                    block_callback(block_count)
+                block_count += 1
+
+            if "parse_options" not in kwargs:
+                kwargs["parse_options"] = self.parse_options()
+
+            table = csv.read_csv(f.name, **kwargs)
+            yield table
 
     def fetch(self) -> pa.Table:
         """
@@ -50,5 +88,4 @@ class Dataset:
         if self.filename().endswith(".gz"):
             csv_file = pa.CompressedInputStream(csv_file, "gzip")
 
-        parse_options = csv.ParseOptions(newlines_in_values=True)
-        return csv.read_csv(csv_file, parse_options=parse_options)
+        return csv.read_csv(csv_file, parse_options=self.parse_options())
