@@ -95,8 +95,14 @@ def fetch_endpoints(state: State, output=print) -> State:
     ):
         for endpoint in endpoint_fn():
             output(endpoint)
-            datasets = api.get(
-                endpoint, apikey, last_updated=state.get_next_updated_time(endpoint))
+            environment = "eil" if endpoint == "citation" else "qa"
+            try:
+                datasets = api.get(
+                    endpoint, apikey, environment=environment, last_updated=state.get_next_updated_time(endpoint))
+            except RuntimeError as e:
+                output(e)
+                continue
+
             for dataset in datasets:
                 fetch_and_update_dataset(dataset, state, output=output)
                 output("")

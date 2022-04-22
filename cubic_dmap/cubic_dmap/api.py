@@ -9,6 +9,7 @@ from cubic_dmap import dataset
 
 BASE_URLS = {
     "qa": "https://mbta-qa.api.cubicnextcloud.com/",
+    "eil": "https://mbta-eil.api.cubicnextcloud.com/",
 }
 
 PUBLIC_ENDPOINTS = {
@@ -27,6 +28,7 @@ CONTROLLED_ENDPOINTS = {
     "use_transaction_location": "controlledresearchusersapi/transactional/use_transaction_location",
     "sale_transaction": "controlledresearchusersapi/transactional/sale_transaction",
     "device_event": "controlledresearchusersapi/transactional/device_event",
+    "citation": "controlledresearchusersapi/transactional/citation",
 }
 
 ENDPOINTS = {**PUBLIC_ENDPOINTS, **CONTROLLED_ENDPOINTS}
@@ -78,11 +80,10 @@ def get(
     """
     params = {"apikey": apikey, **process_get_params(kwargs)}
 
-    json = requests.get(
-        BASE_URLS[environment] + ENDPOINTS[endpoint], params=params
-    ).json()
+    r = requests.get(BASE_URLS[environment] + ENDPOINTS[endpoint], params=params)
+    json = r.json()
 
     if not json["success"]:
-        raise RuntimeError(str(json))
+        raise RuntimeError(f"error fetching {r.url}: {json}")
 
     return [dataset.Dataset.from_dict(j) for j in json["results"]]
