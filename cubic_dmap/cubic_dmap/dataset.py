@@ -89,15 +89,3 @@ class Dataset:
             else:
                 f.seek(0)
                 yield (f, table, None)
-
-    def fetch(self) -> pa.Table:
-        """
-        Return the contents of this dataset as a PyArrow Table.
-        """
-        r = requests.get(self.url)
-        csv_file = pa.BufferReader(r.content)
-
-        if self.filename().endswith(".gz"):
-            csv_file = pa.CompressedInputStream(csv_file, "gzip")
-
-        return csv.read_csv(csv_file, parse_options=self.parse_options())

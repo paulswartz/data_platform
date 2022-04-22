@@ -39,26 +39,6 @@ class TestDataset:
 
         assert ds.filename() == "archived_feeds.txt"
 
-    def test_fetch(self):
-        ds = dataset.Dataset(
-            dataset_id="archived_feeds",
-            id="archived_Feeds",
-            start_date=date(2022, 1, 1),
-            end_date=date(2022, 12, 31),
-            last_updated=datetime.utcnow(),
-            url="https://cdn.mbta.com/archive/archived_feeds.txt",
-        )
-
-        table = ds.fetch()
-        assert isinstance(table, pa.Table)
-        assert table.column_names == [
-            "feed_start_date",
-            "feed_end_date",
-            "feed_version",
-            "archive_url",
-            "archive_note",
-        ]
-
     def test_table(self):
         ds = dataset.Dataset(
             dataset_id="archived_feeds",
