@@ -69,7 +69,7 @@ class TestDataset:
             url="https://cdn.mbta.com/archive/archived_feeds.txt",
         )
 
-        with ds.table() as table:
+        with ds.table() as (csv_file, table, exception):
             assert isinstance(table, pa.Table)
             assert table.column_names == [
                 "feed_start_date",
@@ -78,3 +78,20 @@ class TestDataset:
                 "archive_url",
                 "archive_note",
             ]
+            assert csv_file.name.endswith("archived_feeds.txt.gz")
+            assert exception is None
+
+    def test_table_with_exception(self):
+        ds = dataset.Dataset(
+            dataset_id="archive",
+            id="archive",
+            start_date=date(2022, 1, 1),
+            end_date=date(2022, 12, 31),
+            last_updated=datetime.utcnow(),
+            url="https://cdn.mbta.com/archive/",
+        )
+
+        with ds.table() as (csv_file, table, exception):
+            assert csv_file.read() != ""
+            assert table is None
+            assert isinstance(exception, pa.ArrowInvalid)

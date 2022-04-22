@@ -3,7 +3,7 @@ import gzip
 from urllib.parse import urlparse
 from tempfile import NamedTemporaryFile
 from contextlib import contextmanager
-from typing import Callable, Optional
+from typing import Callable, Generator, IO, Optional, Tuple
 from attrs import frozen, field
 from cattr.preconf import json
 import requests
@@ -52,7 +52,13 @@ class Dataset:
         return csv.ParseOptions(newlines_in_values=True)
 
     @contextmanager
-    def table(self, block_callback: Optional[Callable[[int], None]] = None, **kwargs):
+    def table(
+        self, block_callback: Optional[Callable[[int], None]] = None, **kwargs
+    ) -> Generator[
+        Tuple[IO[bytes], Optional[pa.Table], Optional[Exception]], None, None
+    ]:
+        """
+        Return the"""
         suffix = self.filename()
 
         r = requests.get(self.url, stream=True)
@@ -60,14 +66,13 @@ class Dataset:
         if r.headers.get("content-encoding") == "gzip":
             suffix += ".gz"
 
-        with NamedTemporaryFile(suffix=suffix) as f:
+        with NamedTemporaryFile(mode="wb+", suffix=suffix) as f:
             block_count = 0
             while True:
                 data = r.raw.read(BLOCK_SIZE)
                 if data == b"":
                     break
                 f.write(data)
-                f.flush()
                 if block_callback:
                     block_callback(block_count)
                 block_count += 1
@@ -75,8 +80,15 @@ class Dataset:
             if "parse_options" not in kwargs:
                 kwargs["parse_options"] = self.parse_options()
 
-            table = csv.read_csv(f.name, **kwargs)
-            yield table
+            f.flush()
+            try:
+                table = csv.read_csv(f.name, **kwargs)
+            except Exception as e:
+                f.seek(0)
+                yield (f, None, e)
+            else:
+                f.seek(0)
+                yield (f, table, None)
 
     def fetch(self) -> pa.Table:
         """

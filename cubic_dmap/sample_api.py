@@ -2,7 +2,7 @@
 import os
 import json
 import traceback
-from typing import Any
+from typing import Any, IO
 import pyarrow as pa
 from pyarrow import csv, fs
 import pyarrow.dataset as ds
@@ -23,25 +23,36 @@ controlled_apikey = os.environ['CUBIC_DMAP_CONTROLLED_API_KEY']
     os.environ["DMAP_SPRINGBOARD_FS"])
 
 
-def archive_csv(dataset: Dataset, table: pa.Table) -> None:
+def archive_csv(dataset: Dataset, csv_file: IO[bytes]) -> None:
     last_updated_iso_basic = dataset.last_updated.strftime(
         "%Y%m%dT%H%M%S.%f%z")
     csv_path = f"{archive_path}/{dataset.id}/last_updated={last_updated_iso_basic}"
     archive_fs.create_dir(csv_path, recursive=True)
-    with archive_fs.open_output_stream(f"{csv_path}/{dataset.dataset_id}.csv") as f:
-        csv.write_csv(table, f)
+    with archive_fs.open_output_stream(f"{csv_path}/{dataset.filename()}") as f:
+        write_file_to_stream(csv_file, f)
 
 
-def error_csv(dataset: Dataset, error: Any, table: pa.Table) -> None:
+def error_csv(dataset: Dataset, error: Any, csv_file: IO[bytes]) -> None:
     last_updated_iso_basic = dataset.last_updated.strftime(
         "%Y%m%dT%H%M%S.%f%z")
     csv_path = f"{error_path}/{dataset.id}/last_updated={last_updated_iso_basic}"
     error_fs.create_dir(csv_path, recursive=True)
-    with error_fs.open_output_stream(f"{csv_path}/{dataset.dataset_id}.csv") as f:
-        csv.write_csv(table, f)
+    with error_fs.open_output_stream(f"{csv_path}/{dataset.filename()}") as f:
+        write_file_to_stream(csv_file, f)
 
     with error_fs.open_output_stream(f"{csv_path}/error.txt") as f:
         f.write(str(error).encode('utf8'))
+
+
+BLOCK_SIZE = 1024 * 1024
+
+
+def write_file_to_stream(csv_file: IO[bytes], stream: pa.output_stream) -> None:
+    while True:
+        block = csv_file.read(BLOCK_SIZE)
+        if block == b'':
+            return
+        stream.write(block)
 
 
 def write_parquet(dataset: Dataset, table: pa.Table) -> None:
@@ -98,20 +109,21 @@ def fetch_endpoints(state: State, output=print) -> State:
 def fetch_and_update_dataset(dataset: Dataset, state: State, output) -> None:
     output(dataset)
     state.update(dataset)
-    with dataset.table() as table:
+    with dataset.table() as (csv_file, table, exception):
+        if exception:
+            formatted_error = traceback.format_exception(exception)
+            output(formatted_error)
+            error_csv(dataset, formatted_error, csv_file)
+            return
         try:
-            try:
-                simple_table = simplify.simplify_table(table)
-            except Exception:   # pylint: disable=broad-except
-                # don't fail when simplifying the table
-                simple_table = table
+            simple_table = simplify.simplify_table(table)
             output(simple_table)
             write_parquet(dataset, simple_table)
-            archive_csv(dataset, table)
+            archive_csv(dataset, csv_file)
         except Exception:  # pylint: disable=broad-except
             formatted_error = traceback.format_exc()
             output(formatted_error)
-            error_csv(dataset, formatted_error, table)
+            error_csv(dataset, formatted_error, csv_file)
 
 
 def write_state(state: State) -> None:
