@@ -10,8 +10,7 @@ from cubic_dmap import api, simplify
 from cubic_dmap.dataset import Dataset
 from cubic_dmap.state import State
 
-public_apikey = os.environ['CUBIC_DMAP_PUBLIC_API_KEY']
-controlled_apikey = os.environ['CUBIC_DMAP_CONTROLLED_API_KEY']
+apikey = os.environ['CUBIC_DMAP_CONTROLLED_API_KEY']
 
 (state_fs, state_path) = fs.FileSystem.from_uri(
     os.environ["STATE_FS"])
@@ -89,23 +88,18 @@ def load_state() -> State:
 
 
 def fetch_endpoints(state: State, output=print) -> State:
-    for (endpoint_fn, apikey) in (
-            (api.public_user_endpoints, public_apikey),
-            (api.controlled_user_endpoints, controlled_apikey)
-    ):
-        for endpoint in endpoint_fn():
-            output(endpoint)
-            environment = "eil" if endpoint == "citation" else "qa"
-            try:
-                datasets = api.get(
-                    endpoint, apikey, environment=environment, last_updated=state.get_next_updated_time(endpoint))
-            except RuntimeError as e:
-                output(e)
-                continue
+    for endpoint in api.endpoints():
+        output(endpoint)
+        environment = "eil" if endpoint == "citation" else "qa"
+        try:
+            datasets = api.get(
+                endpoint, apikey, environment=environment, last_updated=state.get_next_updated_time(endpoint))
+        except RuntimeError as e:
+            output(e)
+            continue
 
-            for dataset in datasets:
-                fetch_and_update_dataset(dataset, state, output=output)
-                output("")
+        for dataset in datasets:
+            fetch_and_update_dataset(dataset, state, output=output)
             output("")
         output("")
 
