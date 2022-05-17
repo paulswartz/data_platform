@@ -15,7 +15,7 @@ BASE_URLS = {
 }
 
 ENDPOINTS = {
-    "agg_average_boardings_by_day_type_month": "aggregations/agg_average_boardings_by_day_type_month",
+    "agg_average_boardings_by_day_type_month": "aggregations/agg_average_boardings_by_day_type_month",  # noqa: E501
     "agg_boardings_fareprod_mode_month": "aggregations/agg_boardings_fareprod_mode_month",
     "agg_total_boardings_month_mode": "aggregations/agg_total_boardings_month_mode",
     "agg_hourly_entry_exit_count": "aggregations/agg_hourly_entry_exit_count",

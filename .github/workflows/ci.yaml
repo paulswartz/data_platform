@@ -180,6 +180,8 @@ jobs:
           poetry install
       - name: Check formatting
         run: poetry run black cubic_dmap tests --check
+      - name: Run linting
+        run: poetry run flake8 cubic_dmap tests
       - name: Run tests
         run: poetry run test
       - name: Typecheck

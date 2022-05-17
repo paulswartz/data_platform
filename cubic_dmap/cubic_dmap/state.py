@@ -36,7 +36,8 @@ class State:
 
         If no last_updated time is present, returns None to fetch all datasets.
 
-        Otherwise, increments the current `last_updated` time for that endpoint by a millisecond.
+        Otherwise, increments the current `last_updated` time for that endpoint by a
+        millisecond.
         """
         if endpoint in self.last_updated:
             return self.last_updated[endpoint] + timedelta(milliseconds=1)

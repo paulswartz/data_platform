@@ -1,10 +1,9 @@
 from datetime import date, datetime
-import gzip
 from urllib.parse import urlparse
 from tempfile import NamedTemporaryFile
 from contextlib import contextmanager
 from typing import Callable, Generator, IO, Optional, Tuple
-from attrs import frozen, field
+from attrs import frozen
 from cattr.preconf import json
 import requests
 import pyarrow as pa

@@ -82,7 +82,8 @@ class TestSimplifyTable:
             {
                 "id": pa.array(
                     [
-                        b"\x25\x14\x6b\x13\x25\xe2\x4e\x84\xbc\x33\x63\x92\x0c\xef\x4b\x5a"
+                        b"\x25\x14\x6b\x13\x25\xe2\x4e\x84"
+                        b"\xbc\x33\x63\x92\x0c\xef\x4b\x5a"
                     ],
                     pa.binary(16),
                 )
