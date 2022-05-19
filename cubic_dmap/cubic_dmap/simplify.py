@@ -100,19 +100,23 @@ def date_array_from_dates(dates: Iterable[Optional[date]]) -> pa.Array:
     )
 
 
-def parse_date(d: Union[str, date]) -> Optional[date]:
+DATE_FORMATS = ["%m-%d-%y", "%m-%d-%Y", "%Y-%m-%d", "%B %d, %Y"]
+
+
+def parse_date(d: Optional[Union[str, date]]) -> Optional[date]:
+    if d is None:
+        return None
     if d == "":
         return None
     if isinstance(d, date):
         return d
-    if len(d) == 8:
-        # agg_hourly_entry_exit_count or *_mm_dd_yy
-        return datetime.strptime(d, "%m-%d-%y").date()
-    try:
-        return datetime.strptime(d, "%m-%d-%Y").date()
-    except ValueError:
-        # agg_daily_fareprod_station
-        return datetime.strptime(d, "%B %d, %Y").date()
+    for fmt in DATE_FORMATS:
+        try:
+            return datetime.strptime(d, fmt).date()
+        except ValueError:
+            continue
+
+    raise ValueError(f"unable to convert {d!r} to date")
 
 
 def simplify_year_column(array: pa.Array) -> pa.Array:

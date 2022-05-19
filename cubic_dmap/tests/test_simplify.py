@@ -7,8 +7,8 @@ class TestSimplifyTable:
     def test_date_column(self):
         table = pa.table(
             {
-                "Date": ["03-22-2022", "03-22-22", "March 22, 2022"],
-                "event_mm_dd_yy": ["03-22-22", "03-22-22", ""],
+                "Date": ["03-22-2022", "03-22-22", "March 22, 2022", "2022-03-22"],
+                "event_mm_dd_yy": ["03-22-22", "03-22-22", "", None],
             }
         )
 
@@ -17,12 +17,14 @@ class TestSimplifyTable:
         expected = pa.table(
             {
                 "Date": pa.array(
-                    [epoch_date, epoch_date, epoch_date], type=pa.date32()
+                    [epoch_date, epoch_date, epoch_date, epoch_date], type=pa.date32()
                 ),
-                "event_mm_dd_yy": pa.array([epoch_date, epoch_date, None], pa.date32()),
-                "Year": pa.array(["2022", "2022", "2022"]),
-                "Month": pa.array(["03", "03", "03"]),
-                "Day": pa.array(["22", "22", "22"]),
+                "event_mm_dd_yy": pa.array(
+                    [epoch_date, epoch_date, None, None], pa.date32()
+                ),
+                "Year": pa.array(["2022", "2022", "2022", "2022"]),
+                "Month": pa.array(["03", "03", "03", "03"]),
+                "Day": pa.array(["22", "22", "22", "22"]),
             }
         )
 
