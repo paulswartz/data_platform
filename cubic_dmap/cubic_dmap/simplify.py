@@ -33,6 +33,8 @@ def simplify_table(table: pa.Table) -> pa.Table:
         table = set_date_partition_columns(table, "Date")
     elif "transit_day_mm_dd_yy" in table.schema.names:
         table = set_date_partition_columns(table, "transit_day_mm_dd_yy")
+    elif "event_day_mm_dd_yy" in table.schema.names:
+        table = set_date_partition_columns(table, "event_day_mm_dd_yy")
     for column in {
         "Day Type",
         "Time Period",
