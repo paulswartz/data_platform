@@ -88,9 +88,9 @@ def load_state() -> State:
 
 
 def fetch_endpoints(state: State, output=print) -> State:
+    environment = "qa"
     for endpoint in api.endpoints():
         output(endpoint)
-        environment = "eil" if endpoint == "citation" else "qa"
         try:
             datasets = api.get(
                 endpoint, apikey, environment=environment, last_updated=state.get_next_updated_time(endpoint))
