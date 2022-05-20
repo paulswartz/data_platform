@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "cubic_dmap"
+version = "0.1.0"
+description = ""
+authors = ["Paul Swartz <pswartz@mbta.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7.12,<3.11"
+attrs = "^21.4.0"
+requests = "^2.23.0"
+pyarrow = "^7.0.0"
+cattrs = "^1.10.0"
+pandas = "^1.3.4"
+numpy = "1.21.5"
+
+[tool.poetry.dev-dependencies]
+black = "^22.1.0"
+pytest = "^7.1.0"
+mypy = "^0.941"
+types-requests = "^2.27.13"
+flake8 = "^4.0.1"
+
+[tool.poetry.scripts]
+test='pytest:console_main'
+typecheck='mypy.__main__:console_entry'
+
+[tool.mypy]
+python_version = "3.7"
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = "pyarrow.*"
+ignore_missing_imports = true
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

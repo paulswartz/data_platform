@@ -1,0 +1,6 @@
+/.DS_Store
+/tmp*
+/.mypy_cache
+/.pytest_cache
+/.venv
+/tests
