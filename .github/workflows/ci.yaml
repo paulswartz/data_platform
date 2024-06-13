@@ -1,6 +1,6 @@
 name: CI
 
-on: [pull_request]
+on: [pull_request_target]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -88,17 +88,16 @@ jobs:
         run: mix credo --strict
       - name: Run tests
         run: mix test --cover
-      - name: Save PR information
-        run: |
-          echo "${{ github.event.pull_request.number }}" > cover/PR_NUMBER
-          echo "${{ github.event.pull_request.head.sha }}" > cover/PR_SHA
-        if: github.event.pull_request
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v2
+      - uses: hrishikesh-kadam/setup-lcov@v1
+      - name: Upload coverage artifact and post comment
+        uses: mbta/github-actions-report-lcov@upstream-v4
         with:
-          name: elixir-lcov
-          path: ex_cubic_ingestion/cover/
-          if-no-files-found: error
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          coverage-files: ex_cubic_ingestion/cover/lcov*.info
+          artifact-name: elixir-code-coverage
+          working-directory: ex_cubic_ingestion
+          title-prefix: "Elixir "
+          update-comment: true
       - uses: mbta/actions/dialyzer@v1
         with:
           working-directory: ex_cubic_ingestion
@@ -136,14 +135,13 @@ jobs:
         run: poetry run coverage run -m pytest
       - name: Generate coverage file
         run: poetry run coverage lcov -o cover/lcov.info
-      - name: Save PR information
-        run: |
-          echo "${{ github.event.pull_request.number }}" > cover/PR_NUMBER
-          echo "${{ github.event.pull_request.head.sha }}" > cover/PR_SHA
-        if: github.event.pull_request
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v2
+      - uses: hrishikesh-kadam/setup-lcov@v1
+      - name: Upload coverage artifact and post comment
+        uses: mbta/github-actions-report-lcov@upstream-v4
         with:
-          name: python-lcov
-          path: py_cubic_ingestion/cover/
-          if-no-files-found: error
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          coverage-files: py_cubic_ingestion/cover/lcov*.info
+          artifact-name: python-code-coverage
+          working-directory: py_cubic_ingestion
+          title-prefix: "Python "
+          update-comment: true
