@@ -30,6 +30,11 @@ defmodule ExCubicIngestion.ValidateIncoming do
     GenServer.call(server, :status)
   end
 
+  @spec random_number(GenServer.server()) :: integer()
+  def random_number(server) do
+    GenServer.call(server, :random_number)
+  end
+
   # callbacks
   @impl GenServer
   def init(opts) do
